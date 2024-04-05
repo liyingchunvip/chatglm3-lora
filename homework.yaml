@@ -1,0 +1,79 @@
+1、根据ChatGLM3工程目录下的finetune_demo文件里的finetune_hf.py。
+2、下载AdvertiseGen.tar.gz，解压至data目录
+3、运行数据集修改脚本，变成AdvertiseGen_fix之后的数据集
+import json
+from typing import Union
+from pathlib import Path
+
+
+def _resolve_path(path: Union[str, Path]) -> Path:
+    return Path(path).expanduser().resolve()
+
+
+def _mkdir(dir_name: Union[str, Path]):
+    dir_name = _resolve_path(dir_name)
+    if not dir_name.is_dir():
+        dir_name.mkdir(parents=True, exist_ok=False)
+
+
+def convert_adgen(data_dir: Union[str, Path], save_dir: Union[str, Path]):
+    def _convert(in_file: Path, out_file: Path):
+        _mkdir(out_file.parent)
+        with open(in_file, encoding='utf-8') as fin:
+            with open(out_file, 'wt', encoding='utf-8') as fout:
+                for line in fin:
+                    dct = json.loads(line)
+                    sample = {'conversations': [{'role': 'user', 'content': dct['content']},
+                                                {'role': 'assistant', 'content': dct['summary']}]}
+                    fout.write(json.dumps(sample, ensure_ascii=False) + '\n')
+
+    data_dir = _resolve_path(data_dir)
+    save_dir = _resolve_path(save_dir)
+
+    train_file = data_dir / 'train.json'
+    if train_file.is_file():
+        out_file = save_dir / train_file.relative_to(data_dir)
+        _convert(train_file, out_file)
+
+    dev_file = data_dir / 'dev.json'
+    if dev_file.is_file():
+        out_file = save_dir / dev_file.relative_to(data_dir)
+        _convert(dev_file, out_file)
+
+
+convert_adgen('data/AdvertiseGen', 'data/AdvertiseGen_fix')
+4、下载huggingface的ChatGLM3的大模型库文件，再运行lora微调：
+python finetune_hf.py  data/AdvertiseGen_fix  /opt/dlami/nvme/ChatGLM3/model/chatglm3-6b  configs/lora.yaml
+
+5、过程如下：
+{'eval_rouge-1': 31.572248, 'eval_rouge-2': 6.405069999999999, 'eval_rouge-l': 25.143765999999996, 'eval_bleu-4': 0.031878371461843746, 'eval_runtime': 13.0783, 'eval_samples_per_second': 3.823, 'eval_steps_per_second': 0.306, 'epoch': 0.03}                                                               
+{'loss': 3.4494, 'grad_norm': 7.007495880126953, 'learning_rate': 3.316666666666667e-05, 'epoch': 0.04}                                                 
+{'loss': 3.4613, 'grad_norm': 7.501495361328125, 'learning_rate': 3.3e-05, 'epoch': 0.04}                                                               
+{'loss': 3.651, 'grad_norm': 8.346992492675781, 'learning_rate': 3.283333333333333e-05, 'epoch': 0.04}                                                  
+{'loss': 3.4031, 'grad_norm': 6.508538722991943, 'learning_rate': 3.266666666666667e-05, 'epoch': 0.04}                                                 
+{'loss': 3.3883, 'grad_norm': 8.683391571044922, 'learning_rate': 3.2500000000000004e-05, 'epoch': 0.04}                                                
+{'loss': 3.3582, 'grad_norm': 7.851873397827148, 'learning_rate': 3.233333333333333e-05, 'epoch': 0.04}                                                 
+{'loss': 3.393, 'grad_norm': 7.159714221954346, 'learning_rate': 3.2166666666666665e-05, 'epoch': 0.04}                                                 
+{'loss': 3.4621, 'grad_norm': 7.237621784210205, 'learning_rate': 3.2000000000000005e-05, 'epoch': 0.04}                                                
+{'loss': 3.5256, 'grad_norm': 7.251403331756592, 'learning_rate': 3.183333333333334e-05, 'epoch': 0.04}                                                 
+{'loss': 3.4645, 'grad_norm': 6.658366680145264, 'learning_rate': 3.1666666666666666e-05, 'epoch': 0.04}                                                
+{'loss': 3.3443, 'grad_norm': 6.90360689163208, 'learning_rate': 3.15e-05, 'epoch': 0.04}                                                               
+{'loss': 3.525, 'grad_norm': 7.885157585144043, 'learning_rate': 3.1333333333333334e-05, 'epoch': 0.04}                                                 
+{'loss': 3.4387, 'grad_norm': 7.459792613983154, 'learning_rate': 3.116666666666667e-05, 'epoch': 0.04}                                                 
+{'loss': 3.3617, 'grad_norm': 8.092228889465332, 'learning_rate': 3.1e-05, 'epoch': 0.04}                                                               
+{'loss': 3.3201, 'grad_norm': 7.6951189041137695, 'learning_rate': 3.0833333333333335e-05, 'epoch': 0.04}                                               
+{'loss': 3.3637, 'grad_norm': 7.318968772888184, 'learning_rate': 3.066666666666667e-05, 'epoch': 0.04}                                                 
+{'loss': 3.4508, 'grad_norm': 6.866771221160889, 'learning_rate': 3.05e-05, 'epoch': 0.04}                                                              
+{'loss': 3.4723, 'grad_norm': 6.47397518157959, 'learning_rate': 3.0333333333333337e-05, 'epoch': 0.04}                                                 
+{'loss': 3.3633, 'grad_norm': 6.769496440887451, 'learning_rate': 3.016666666666667e-05, 'epoch': 0.04}                                                 
+{'loss': 3.4109, 'grad_norm': 6.475576400756836, 'learning_rate': 3e-05, 'epoch': 0.04}                                                                 
+{'loss': 3.243, 'grad_norm': 6.645593166351318, 'learning_rate': 2.9833333333333335e-05, 'epoch': 0.04}                                                 
+{'loss': 3.34, 'grad_norm': 7.498368263244629, 'learning_rate': 2.9666666666666672e-05, 'epoch': 0.04}                                                  
+{'loss': 3.3811, 'grad_norm': 7.616629600524902, 'learning_rate': 2.95e-05, 'epoch': 0.04}                                                              
+{'loss': 3.3756, 'grad_norm': 10.06025505065918, 'learning_rate': 2.9333333333333336e-05, 'epoch': 0.04}                                                
+{'loss': 3.4479, 'grad_norm': 6.931993007659912, 'learning_rate': 2.916666666666667e-05, 'epoch': 0.04}  
+
+6、loss rate保持在3.2-3.4之间
+7、lora文件最终会保存在output目录下checkpoint-2000
+8、修改bases_demo下的web_demo_gradio.py里的MODEL_PATH为lora微调后的checkpoint-2000目录，同时还要修改adapter_config.json的绝对路径为lora微调后的checkpoint-2000目录下的adapter_config.json
+9、python启动web_demo_gradio.py
