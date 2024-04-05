@@ -90,5 +90,5 @@ Training completed. Do not forget to share your model on huggingface.co/models =
 
 6、loss rate保持在3.2-3.4之间
 7、lora文件最终会保存在output目录下checkpoint-2000
-8、修改bases_demo下的web_demo_gradio.py里的MODEL_PATH为lora微调后的checkpoint-2000目录，同时还要修改adapter_config.json的绝对路径为lora微调后的checkpoint-2000目录下的adapter_config.json
+8、修改bases_demo下的web_demo_gradio.py里的MODEL_PATH为lora微调后的checkpoint-2000目录
 9、python启动web_demo_gradio.py
